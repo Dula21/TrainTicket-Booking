@@ -1,0 +1,16 @@
+/* src/components/Home.css */
+.home-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 100px;
+  }
+  
+  .home-container h1 {
+    margin-bottom: 50px;
+  }
+  
+  .home-container p {
+    font-size: 20px;
+    margin-bottom: 100px;
+  }

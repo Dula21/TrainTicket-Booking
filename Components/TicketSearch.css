@@ -1,0 +1,43 @@
+/* src/components/TicketSearch.css */
+.ticket-search-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 100px;
+  }
+  
+  .ticket-search-container h1 {
+    margin-bottom: 50px;
+  }
+  
+  .ticket-search-container form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .ticket-search-container label {
+    margin-bottom: 20px;
+  }
+  
+  .ticket-search-container input[type="text"],
+  .ticket-search-container input[type="date"] {
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 300px;
+  }
+  
+  .ticket-search-container button[type="submit"] {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .ticket-search-container button[type="submit"]:hover {
+    background-color: #45a049;
+  }

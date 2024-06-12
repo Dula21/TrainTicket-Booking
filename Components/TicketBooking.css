@@ -1,0 +1,43 @@
+.ticket-booking-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 100px;
+  }
+  
+  .ticket-booking-container h1 {
+    margin-bottom: 50px;
+  }
+  
+  .ticket-booking-container form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .ticket-booking-container label {
+    margin-bottom: 20px;
+  }
+  
+  .ticket-booking-container input[type="text"],
+  .ticket-booking-container input[type="number"] {
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 300px;
+  }
+  
+  .ticket-booking-container button[type="submit"] {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .ticket-booking-container button[type="submit"]:hover {
+    background-color: #45a049;
+  }
+  

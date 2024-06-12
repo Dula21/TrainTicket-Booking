@@ -1,114 +1,239 @@
-﻿using AutoMapper;
-using Booking_TrainTickets.Core.DTO;
-using Booking_TrainTickets.Core.Entities;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TrainTicket_Booking.Core.Context;
+﻿using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System.Text.Json.Serialization;
+using TrainTicketBookingUI.Models;
+using System.Net;
+using System.Text;
+using System;
+using System.Net.Http;
+using Newtonsoft.Json.Linq;
+using Microsoft.DotNet.Scaffolding.Shared.Messaging;
+using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 
-namespace Booking_TrainTickets.Controllers
+
+
+namespace TrainTicketBookingUI.Controllers
 {
-    [Route("TrainAPI/[controller]")]
-    [ApiController]
-    public class SystemTrainController : ControllerBase
+    public class SystemTrainController : Controller
     {
-        // we need database so we inject it using constrictor
-        private readonly ApplicationDbContext _context;
-        private readonly IMapper _mapper;
-
-        public SystemTrainController(ApplicationDbContext context, IMapper mapper)
+        Uri baseAddress = new Uri("https://localhost:7076/api");
+        private readonly HttpClient _client;
+        public SystemTrainController()
         {
-            _context = context;
-            _mapper = mapper;
+            _client = new HttpClient();
+            _client.BaseAddress = baseAddress;
         }
+        [HttpGet]
+        public async Task<IActionResult> Index()
+        {
+            try
+            {
+                List<TrainViewModel> trainlist = new List<TrainViewModel>();
+                HttpResponseMessage response = await _client.GetAsync(_client.BaseAddress + "/SystemTrain/GetTrain");
 
-        // CRUD
+                if (response.IsSuccessStatusCode)
+                {
+                    string data = response.Content.ReadAsStringAsync().Result;
+                    trainlist = JsonConvert.DeserializeObject<List<TrainViewModel>>(data);
+                }
+
+                return View(trainlist);
+            }
+            catch (Exception ex)
+            {
+
+                TempData["errorMessage"] = ex.Message;
+                return View();
+            }
+
+        }
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View();
+        }
         [HttpPost]
-        public async Task<ActionResult<Train>> CreateTrain(CreateTrainDto createTrainDto)
-
+        public IActionResult Create(TrainViewModel model)
         {
-            // Set IDENTITY_INSERT to ON for the Trains table
-            await _context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT Trains ON");
-
-            var train = _mapper.Map<Train>(createTrainDto);
-            _context.Trains.Add(train);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetTrain), new { id = train.Id }, train);
-        }
-
-        //Read All
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<GetTrainDto>>> GetTrain(string? q)
-        {
-            //Get Tickets from Context
-            //var tickets = await _context.Tickets.ToListAsync();
-
-            ///check if  we have search parameter or not
-            IQueryable<Train> query = _context.Trains;
-            if (q is not null)
+            try
             {
-                query = query.Where(t => t.TrainName.Contains(q));
+                string data = JsonConvert.SerializeObject(model);
+                StringContent content = new StringContent(data, Encoding.UTF8, "application/json");
+                HttpResponseMessage response = _client.PostAsync(_client.BaseAddress + "/SystemTrain/CreateTrain", content).Result;
 
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["sucessMessage"] = "Train Added !.";
+                    return RedirectToAction("Index");
+                }
             }
-            var Trains = await query.ToListAsync();
-
-            var convertedTrain = _mapper.Map<IEnumerable<GetTrainDto>>(Trains);
-
-            return Ok(convertedTrain);
+            catch (Exception ex)
+            {
+                TempData["errorMessage"] = ex.Message;
+                return View();
+            }
+            return View();
         }
         [HttpGet]
-        [Route("{TrainName}")]
-        public async Task<ActionResult<GetTrainDto>> GetTrainByName([FromRoute] string TrainName)
+        public IActionResult Edit(long id)
         {
-            // Get train from context and check if it exists
-            var train = await _context.Trains.FirstOrDefaultAsync(t => t.TrainName == TrainName);
-            if (train == null)
+
+            try
             {
-                return NotFound("Train Not Found");
+                TrainViewModel train = new TrainViewModel();
+                HttpResponseMessage response = _client.GetAsync(_client.BaseAddress + "/SystemTrain/GetTrain/" + id).Result;
+                if (response.IsSuccessStatusCode)
+                {
+                    string data = response.Content.ReadAsStringAsync().Result;
+                    train = JsonConvert.DeserializeObject<TrainViewModel>(data);
+                }
+                return View(train);
+            }
+            catch (Exception ex)
+            {
+                TempData["errorMessage"] = ex.Message;
+                return View();
             }
 
-            // Map the train object to the GetTrainDto object
-            var convertedTrain = _mapper.Map<GetTrainDto>(train);
 
-            // Return the converted train object as an OK response
-            return Ok(convertedTrain);
         }
-        //Update
-        [HttpPut]
-        [Route("edit/{id}")]
-        public async Task<IActionResult> EditTrain([FromRoute] long id, [FromBody] UpdateTrainDto updateTrainDto)
-
+        [HttpPost]
+        public IActionResult Edit(TrainViewModel model)
         {
-            //get ticket from context and check  if it extits
-            var train = await _context.Trains.FirstOrDefaultAsync(t => t.Id == id);
-            if (train == null)
+            try
             {
-                return NotFound("Train Not Found");
+                string data = JsonConvert.SerializeObject(model);
+                StringContent content = new StringContent(data, Encoding.UTF8, "application/json");
+                HttpResponseMessage response = _client.PutAsync(_client.BaseAddress + "/SystemTrain/EditTrain/edit/", content).Result;
 
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["successMessage"] = "Train details updated successfully.";
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    TempData["errorMessage"] = "Failed to update train details.";
+                    return View();
+                }
             }
-            _mapper.Map(updateTrainDto, train);
-            train.UpdatedAt = DateTime.Now;
-            await _context.SaveChangesAsync();
-
-            return Ok("Train Updated sucessfully!");
+            catch (Exception ex)
+            {
+                TempData["errorMessage"] = ex.Message;
+                return View();
+            }
         }
-        //Delete
-        [HttpDelete]
-        [Route("delete/{id}")]
-        public async Task<IActionResult> DeleteTask([FromRoute] long id)
+        [HttpGet]
+        public IActionResult Delete(long id)
         {
-            //get ticket from context and check  if it extits
-            var train = await _context.Trains.FirstOrDefaultAsync(t => t.Id == id);
-            if (train == null)
+            try
             {
-                return NotFound("Train Not Found");
+                TrainViewModel train = new TrainViewModel();
+                HttpResponseMessage response = _client.GetAsync(_client.BaseAddress + "/SystemTrain/GetTrainById/" + id).Result;
 
+                if (response.IsSuccessStatusCode)
+                {
+                    string data = response.Content.ReadAsStringAsync().Result;
+                    train = JsonConvert.DeserializeObject<TrainViewModel>(data);
+
+                }
+                return View(train);
             }
-            _context.Trains.Remove(train);
-            await _context.SaveChangesAsync();
+            catch (Exception ex)
+            {
+                TempData["errorMessage"] = ex.Message;
+                return View();
+            }
 
-            return Ok("Train deleted Succcesully!");
+        }
 
+        [HttpPost, ActionName("Delete")]
+        public IActionResult DeleteConfirmed(long id)
+        {
+            try
+            {
+                HttpResponseMessage response = _client.DeleteAsync(_client.BaseAddress + "/SystemTrain/DeleteTrain/delete/" + id).Result;
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["successMessage"] = "Train details deleted successfully.";
+                    return RedirectToAction("Index");
+                }
+            }
+            catch (Exception ex)
+            {
+
+                TempData["errorMessage"] = ex.Message;
+                return View();
+            }
+            return View();
+
+        }
+        [HttpGet]
+        public IActionResult Search()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SearchTrain(SearchViewModel model)
+        {
+            try
+            {
+                // Make sure _client is initialized and configured properly
+                // Adjust the URL as necessary based on your API endpoint
+                var response = await _client.PostAsJsonAsync("/SystemTrain/SearchTrains/Search", model);
+
+                // Check if the request was successful
+                if (response.IsSuccessStatusCode)
+                {
+                    var searchData = await response.Content.ReadAsStringAsync();
+                    var searchResults = JsonConvert.DeserializeObject<List<SearchViewModel>>(searchData);
+                    return View("SearchResults", searchResults);
+                }
+                else
+                {
+                    TempData["errorMessage"] = $"Failed to retrieve train details. Status code: {response.StatusCode}";
+                    return View("Index"); // Or return some other view
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["errorMessage"] = ex.Message;
+                return View();
+            }
+        }
+        
+        [HttpGet]
+        public IActionResult Results()
+        {
+            return View();
+        }
+        [HttpPost]
+        public IActionResult SearchResults(SearchViewModel model)
+        {
+            try
+            {
+                string data = JsonConvert.SerializeObject(model);
+                StringContent content = new StringContent(data, Encoding.UTF8, "application/json");
+                HttpResponseMessage response = _client.PostAsync(_client.BaseAddress + "/SystemTrain/SearchResults/Search", content).Result;
+
+                // Check if the request was successful
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["successMessage"] = "Train details updated successfully.";
+                    return View("SearchResults");
+                }
+                else
+                {
+                    TempData["errorMessage"] = "Failed to update train details.";
+                    return View();
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["errorMessage"] = ex.Message;
+                return View();
+            }
         }
     }
 }
